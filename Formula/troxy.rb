@@ -3,7 +3,7 @@ class Troxy < Formula
 
   desc "Terminal proxy inspector — mitmproxy flows for CLI and Claude MCP"
   homepage "https://github.com/Peter1119/troxy"
-  url "https://github.com/Peter1119/troxy.git", tag: "v0.1.0", branch: "main"
+  url "https://github.com/Peter1119/troxy.git", tag: "v0.2.0", branch: "main"
   license "MIT"
 
   depends_on "python@3.14"
