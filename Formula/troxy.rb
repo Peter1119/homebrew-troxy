@@ -3,6 +3,7 @@ class Troxy < Formula
   homepage "https://github.com/Peter1119/troxy"
   url "https://github.com/Peter1119/troxy.git", tag: "v0.4.0"
   license "MIT"
+  revision 1
 
   depends_on "python@3.14"
   depends_on "uv"
@@ -10,12 +11,7 @@ class Troxy < Formula
   def install
     libexec.install Dir["*"]
 
-    # Pre-create the uv virtualenv inside libexec so the first `troxy` run is
-    # clean (no "Creating virtual environment" noise printed before real output).
     uv_bin = Formula["uv"].opt_bin/"uv"
-    cd libexec do
-      system uv_bin, "sync", "--all-extras"
-    end
 
     (bin/"troxy").write <<~SH
       #!/bin/bash
@@ -26,6 +22,16 @@ class Troxy < Formula
       #!/bin/bash
       exec "#{uv_bin}" --directory "#{libexec}" run python -m troxy.mcp.server "$@"
     SH
+  end
+
+  def post_install
+    # Pre-warm the uv virtualenv in the final install location so the first
+    # `troxy` run does not print "Creating virtual environment" noise before
+    # actual output. Done in post_install (not install) so the python symlink
+    # is created against the final Cellar path.
+    cd libexec do
+      system Formula["uv"].opt_bin/"uv", "sync", "--all-extras"
+    end
   end
 
   def caveats
