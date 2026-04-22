@@ -3,7 +3,7 @@ class Troxy < Formula
   homepage "https://github.com/Peter1119/troxy"
   url "https://github.com/Peter1119/troxy.git", tag: "v0.4.0"
   license "MIT"
-  revision 2
+  revision 3
 
   depends_on "python@3.14"
   depends_on "uv"
@@ -13,7 +13,7 @@ class Troxy < Formula
 
     # Call the venv entry points directly (rather than `uv run ...`) so the
     # first invocation does not print uv sync noise and there is no uv-level
-    # staleness check overhead on every command.
+    # staleness check on every command.
     (bin/"troxy").write <<~SH
       #!/bin/bash
       exec "#{libexec}/.venv/bin/troxy" "$@"
@@ -26,12 +26,19 @@ class Troxy < Formula
   end
 
   def post_install
-    # Populate libexec/.venv in the final install location. Done in
-    # post_install (not install) so the uv-managed python symlink resolves
-    # against the final path layout.
+    # post_install runs in brew's sandbox which blocks ~/.cache/uv. Route
+    # uv's cache into the prefix, and use brew's python@3.14 instead of
+    # letting uv download its own managed interpreter into ~/.local/share/uv.
+    uv_cache = libexec/".uv-cache"
+    ENV["UV_CACHE_DIR"] = uv_cache.to_s
+
     cd libexec do
-      system Formula["uv"].opt_bin/"uv", "sync", "--all-extras"
+      system Formula["uv"].opt_bin/"uv", "sync", "--all-extras",
+             "--python", Formula["python@3.14"].opt_bin/"python3.14"
     end
+
+    # Drop the cache once the venv is realised — keeps install size minimal.
+    uv_cache.rmtree if uv_cache.exist?
   end
 
   def caveats
